@@ -1,8 +1,8 @@
 ﻿// See https://aka.ms/new-console-template for more information
 
-var input = await System.IO.File.ReadAllLinesAsync(args[0]);
+using System.Text.RegularExpressions;
 
-var sum = 0;
+var input = await File.ReadAllLinesAsync(args[0]);
 
 var spelledDigits = new Dictionary<string, char>
 {
@@ -17,41 +17,31 @@ var spelledDigits = new Dictionary<string, char>
     ["nine"] = '9',
 };
 
+var sum = 0;
+
 foreach (var line in input)
 {
-    Digit? dFirst = null;
-    Digit? dLast = null;
+    var numerics = from d in Enumerable.Range(1, 9).Select(o => o.ToString())
+                   from m in Regex.Matches(line, Regex.Escape(d))
+                   select new Digit(m.Index, d[0]);
 
-    if (line.Any(char.IsDigit))
-    {
-        dFirst = new(
-            line.IndexOf(line.First(char.IsDigit)),
-            line.First(char.IsDigit));
+    var spelled = from d in spelledDigits
+                  from m in Regex.Matches(line, Regex.Escape(d.Key))
+                  select new Digit(m.Index, d.Value);
 
-        dLast = new(
-            line.LastIndexOf(line.Last(char.IsDigit)),
-            line.Last(char.IsDigit));
-    }
+    var all = Enumerable.Concat(numerics, spelled).OrderBy(d => d.Index).ToArray();
 
-    var sFirst = (from d in spelledDigits
-                  let i = line.IndexOf(d.Key)
-                  where i != -1
-                  orderby i
-                  select new Digit(i, d.Value)).FirstOrDefault();
+    var first = all.First();
+    var last = all.Last();
 
-    var sLast = (from d in spelledDigits
-                 let i = line.LastIndexOf(d.Key) + (d.Key.Length - 1)
-                 where i != -1
-                 orderby i
-                 select new Digit(i, d.Value)).LastOrDefault();
+    var calibrationString = new string([first.Value, last.Value]);
 
-    var first = new Digit?[] { dFirst, sFirst }.Where(d => d is not null).Cast<Digit>().OrderBy(d => d.Index).First();
-    var last = new Digit?[] { dLast, sLast }.Where(d => d is not null).Cast<Digit>().OrderBy(d => d.Index).Last();
+    Console.WriteLine("{0} => {1} => {2}",
+        line,
+        string.Join(",", all.Select(d => d.Value)),
+        calibrationString);
 
-    Console.WriteLine("{0} => {1}{2}", line, first.Value, last.Value);
-    
-    var calibrationValue = int.Parse(new string([first.Value, last.Value]));
-
+    var calibrationValue = int.Parse(calibrationString);
     sum += calibrationValue;
 }
 
