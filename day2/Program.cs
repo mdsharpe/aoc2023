@@ -1,7 +1,4 @@
-﻿using System.Text.Json;
-
-var input = await File.ReadAllLinesAsync(args[0]);
-
+﻿var input = await File.ReadAllLinesAsync(args[0]);
 var games = GameParser.ParseGames(input);
 
 var targetAmounts = new Dictionary<Color, int>
@@ -12,10 +9,10 @@ var targetAmounts = new Dictionary<Color, int>
 };
 
 var possibleGameIdSum = 0;
+var minimumSetPowerSum = 0;
 
 foreach (var game in games)
 {
-    Console.WriteLine(JsonSerializer.Serialize(game));
     var gamePossible = true;
 
     foreach (var target in targetAmounts)
@@ -28,8 +25,6 @@ foreach (var game in games)
             .DefaultIfEmpty()
             .Max();
 
-        Console.WriteLine($"{color}: {maxDrawn} / {targetAmount}");
-
         if (maxDrawn > targetAmount)
         {
             gamePossible = false;
@@ -41,6 +36,14 @@ foreach (var game in games)
     {
         possibleGameIdSum += game.Id;
     }
+
+    var minimumByColor = from handful in game.Handfuls
+                         from color in handful.Keys
+                         group handful[color] by color into g
+                         select g.Max();
+
+    minimumSetPowerSum += minimumByColor.Aggregate((a, b) => a * b);
 }
 
-Console.WriteLine(possibleGameIdSum);
+Console.WriteLine("Sum of IDs of possible games: {0}", possibleGameIdSum);
+Console.WriteLine("Sum of the power of minimum sets: {0}", minimumSetPowerSum);
