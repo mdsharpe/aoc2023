@@ -1,60 +1,24 @@
 ﻿var input = await File.ReadAllLinesAsync(args[0]);
 var engine = new Engine(input);
 
-var partNumbersSum = 0;
-var allNumbersSum = 0;
+var numbers = engine.EnumerateNumbers().ToArray();
+var partNumbersSum = numbers.Where(o => o.Adjacents.Any()).Select(o => o.Value).Sum();
+Console.WriteLine("Part numbers sum: {0}", partNumbersSum);
+
+var gears = engine.EnumerateGears().ToArray();
 var gearRatiosSum = 0;
-SchematicNumber partNumber;
-Coordinate c;
 
-for (var y = 0; y < engine.SchematicHeight; y++)
+foreach (var g in gears)
 {
-    partNumber = new();
+    var adjacentNumbers = numbers.Where(o => o.Adjacents.ContainsKey(g))
+                         .Select(o => o.Value)
+                         .ToArray();
 
-    for (var x = 0; x <= engine.SchematicWidth; x++)
+    if (adjacentNumbers.Length > 1)
     {
-        c = new Coordinate(x, y);
-
-        if (x < engine.SchematicWidth)
-        {
-            if (char.IsDigit(engine.Schematic[c]))
-            {
-                partNumber.Add(c, engine.Schematic[c]);
-
-                partNumber.AddAdjacents(
-                    engine.EnumerateAdjacents(c)
-                    .Where(a => a.c != '.')
-                    .Where(a => !char.IsDigit(a.c)));
-
-                continue;
-            }
-
-            if (engine.Schematic[c] == '*')
-            {
-                gearRatiosSum += engine.EnumerateAdjacents(c)
-                    .Where(a => char.IsDigit(a.c))
-                    .Select(a => int.Parse(a.c.ToString()))
-                    .Aggregate((a, b) => a * b);
-            }
-        }
-
-        if (partNumber.Length > 0)
-        {
-            if (partNumber.HasAdjacent)
-            {
-                partNumbersSum += partNumber.Value;
-            }
-
-            allNumbersSum += partNumber.Value;
-
-            Console.WriteLine($"{partNumber.Value}: {new string(partNumber._adjacents.Select(o => o.Value).ToArray())}");
-
-            partNumber = new();
-        }
+        var gearRatio = adjacentNumbers.Aggregate((a, b) => a * b);
+        gearRatiosSum += gearRatio;
     }
 }
 
-Console.WriteLine();
-Console.WriteLine("Part numbers sum: {0}", partNumbersSum);
-Console.WriteLine("All numbers sum:  {0}", allNumbersSum);
 Console.WriteLine("Gear ratios sum:  {0}", gearRatiosSum);
