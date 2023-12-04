@@ -37,16 +37,16 @@ internal class Card
         return new Card(cardId, winningNumbers, numbersYouHave);
     }
 
+    public int CountWins() => NumbersYouHave.Count(WinningNumbers.Contains);
+
     public int GetWorth()
     {
         var worth = 0;
+        var winCount = CountWins();
 
-        foreach (var number in NumbersYouHave)
+        for (var i = 0; i < winCount; i++)
         {
-            if (WinningNumbers.Contains(number))
-            {
-                worth = worth == 0 ? 1 : (worth * 2);
-            }
+            worth = worth == 0 ? 1 : (worth * 2);
         }
 
         return worth;
