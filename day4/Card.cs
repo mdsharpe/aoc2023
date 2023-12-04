@@ -1,7 +1,10 @@
 using System.Collections.Immutable;
+using System.Text.RegularExpressions;
 
 internal class Card
 {
+    private static readonly Regex _regex = new(@"^Card\s+(\d+):((\s+\d+)+)\s\|((\s+\d+)+)$");
+
     public Card(int id, IEnumerable<int> winningNumbers, IEnumerable<int> numbersYouHave)
     {
         Id = id;
@@ -13,9 +16,31 @@ internal class Card
     public ImmutableHashSet<int> WinningNumbers { get; }
     public ImmutableHashSet<int> NumbersYouHave { get; }
 
+    public static Card Parse(string text)
+    {
+        var match = _regex.Match(text);
+        if (!match.Success)
+        {
+            throw new ArgumentException();
+        }
+
+        var cardId = int.Parse(match.Groups[1].Value);
+
+        var winningNumbers = match.Groups[3].Captures
+            .Select(o => o.Value)
+            .Select(int.Parse);
+
+        var numbersYouHave = match.Groups[5].Captures
+            .Select(o => o.Value)
+            .Select(int.Parse);
+
+        return new Card(cardId, winningNumbers, numbersYouHave);
+    }
+
     public int GetWorth()
     {
         var worth = 0;
+
         foreach (var number in NumbersYouHave)
         {
             if (WinningNumbers.Contains(number))
