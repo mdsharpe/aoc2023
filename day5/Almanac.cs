@@ -10,9 +10,27 @@ internal class Almanac
     public required IImmutableSet<long> Seeds { get; init; }
     public required IImmutableList<AlmanacMap> Maps { get; init; }
 
-    public static Almanac Parse(IList<string> input)
+    public static Almanac Parse(IList<string> input, bool seedsAsRanges = false)
     {
-        var seeds = input[0].Substring(6).Split(' ', StringSplitOptions.RemoveEmptyEntries).Select(long.Parse).ToImmutableHashSet();
+        var seeds = input[0].Substring(6).Split(' ', StringSplitOptions.RemoveEmptyEntries).Select(long.Parse).ToArray();
+
+        if (seedsAsRanges)
+        {
+            var newSeeds = new List<long>();
+
+            for (var i = 0; i < seeds.Length; i += 2)
+            {
+                var start = seeds[i];
+                var end = seeds[i + 1];
+
+                for (var j = start; j <= end; j++)
+                {
+                    newSeeds.Add(j);
+                }
+            }
+
+            seeds = newSeeds.ToArray();
+        }
 
         List<AlmanacMap> maps = [];
         string? src = null;
@@ -52,7 +70,7 @@ internal class Almanac
 
         return new Almanac
         {
-            Seeds = seeds,
+            Seeds = seeds.ToImmutableHashSet(),
             Maps = maps.ToImmutableArray()
         };
     }
