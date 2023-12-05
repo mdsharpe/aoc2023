@@ -2,4 +2,11 @@
 
 var almanac = Almanac.Parse(input);
 
-Console.WriteLine(System.Text.Json.JsonSerializer.Serialize(almanac));
+var minLocation = long.MaxValue;
+
+foreach (var seed in almanac.Seeds) {
+    var location = almanac.Lookup("seed", "location", seed);
+    minLocation = Math.Min(minLocation, location);
+}
+
+Console.WriteLine($"Min location: {minLocation}");
