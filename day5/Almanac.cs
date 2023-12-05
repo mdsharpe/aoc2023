@@ -21,9 +21,9 @@ internal class Almanac
             for (var i = 0; i < seeds.Length; i += 2)
             {
                 var start = seeds[i];
-                var end = seeds[i + 1];
+                var len = seeds[i + 1];
 
-                for (var j = start; j <= end; j++)
+                for (var j = start; j <= start + len; j++)
                 {
                     newSeeds.Add(j);
                 }
