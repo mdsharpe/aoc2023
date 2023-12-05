@@ -1,5 +1,4 @@
 using System.Collections.Immutable;
-using System.ComponentModel.DataAnnotations;
 using System.Text.RegularExpressions;
 
 internal class Almanac
@@ -7,29 +6,21 @@ internal class Almanac
     private static readonly Regex RegexMapTitle = new Regex(@"(?<src>\w+)-to-(?<dest>\w+) map:");
     private static readonly Regex RegexMapEntry = new Regex(@"(?<destRangeStart>\d+) (?<srcRangeStart>\d+) (?<rangeLen>\d+)");
 
-    public required IImmutableSet<long> Seeds { get; init; }
-    public required IImmutableList<AlmanacMap> Maps { get; init; }
+    public required IEnumerable<long> SeedsEnumerable { get; init; }
+    public required IImmutableDictionary<string, AlmanacMap> Maps { get; init; }
 
-    public static Almanac Parse(IList<string> input, bool seedsAsRanges = false)
+    public static Almanac Parse(IList<string> input, bool interpretSeedsAsRanges = false)
     {
-        var seeds = input[0].Substring(6).Split(' ', StringSplitOptions.RemoveEmptyEntries).Select(long.Parse).ToArray();
+        var seedsRaw = input[0].Substring(6).Split(' ', StringSplitOptions.RemoveEmptyEntries).Select(long.Parse).ToImmutableArray();
+        IEnumerable<long> seeds;
 
-        if (seedsAsRanges)
+        if (interpretSeedsAsRanges)
         {
-            var newSeeds = new List<long>();
-
-            for (var i = 0; i < seeds.Length; i += 2)
-            {
-                var start = seeds[i];
-                var len = seeds[i + 1];
-
-                for (var j = start; j <= start + len; j++)
-                {
-                    newSeeds.Add(j);
-                }
-            }
-
-            seeds = newSeeds.ToArray();
+            seeds = SeedRanges.EnumerateSeedsInRanges(seedsRaw);
+        }
+        else
+        {
+            seeds = seedsRaw;
         }
 
         List<AlmanacMap> maps = [];
@@ -70,8 +61,8 @@ internal class Almanac
 
         return new Almanac
         {
-            Seeds = seeds.ToImmutableHashSet(),
-            Maps = maps.ToImmutableArray()
+            SeedsEnumerable = seeds,
+            Maps = maps.ToImmutableDictionary(m => m.Src, m => m)
         };
     }
 
@@ -81,7 +72,7 @@ internal class Almanac
 
         do
         {
-            map = Maps.Single(m => m.Src == src);
+            map = Maps[src];
 
             value = map.Map(value);
 

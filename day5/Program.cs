@@ -1,16 +1,21 @@
-﻿var input = await File.ReadAllLinesAsync(args[0]);
+﻿using System.Collections.Concurrent;
+
+var input = await File.ReadAllLinesAsync(args.Length > 0 ? args[0] : "../../../input.txt");
 
 static long FindMinLocation(Almanac almanac)
 {
-    var minLocation = long.MaxValue;
+    ConcurrentDictionary<long, byte> locations = [];
 
-    foreach (var seed in almanac.Seeds)
-    {
-        var location = almanac.Lookup("seed", "location", seed);
-        minLocation = Math.Min(minLocation, location);
-    }
+    Parallel.ForEach(
+        almanac.SeedsEnumerable,
+        new ParallelOptions { MaxDegreeOfParallelism = 1 },
+        seed =>
+        {
+            var location = almanac.Lookup("seed", "location", seed);
+            locations.TryAdd(location, 0);
+        });
 
-    return minLocation;
+    return locations.Keys.Min();
 }
 
 Almanac almanac;
@@ -20,6 +25,6 @@ almanac = Almanac.Parse(input);
 minLocation = FindMinLocation(almanac);
 Console.WriteLine($"Min location: {minLocation}");
 
-almanac = Almanac.Parse(input, seedsAsRanges: true);
+almanac = Almanac.Parse(input, interpretSeedsAsRanges: true);
 minLocation = FindMinLocation(almanac);
 Console.WriteLine($"Min location: {minLocation}");
