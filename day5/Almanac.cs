@@ -7,20 +7,24 @@ internal class Almanac
     private static readonly Regex RegexMapEntry = new Regex(@"(?<destRangeStart>\d+) (?<srcRangeStart>\d+) (?<rangeLen>\d+)");
 
     public required IEnumerable<long> SeedsEnumerable { get; init; }
+    public required long SeedCount { get; init; }
     public required IImmutableDictionary<string, AlmanacMap> Maps { get; init; }
 
     public static Almanac Parse(IList<string> input, bool interpretSeedsAsRanges = false)
     {
         var seedsRaw = input[0].Substring(6).Split(' ', StringSplitOptions.RemoveEmptyEntries).Select(long.Parse).ToImmutableArray();
         IEnumerable<long> seeds;
+        long seedCount;
 
         if (interpretSeedsAsRanges)
         {
+            seedCount = SeedRanges.CountSeedsInRanges(seedsRaw);
             seeds = SeedRanges.EnumerateSeedsInRanges(seedsRaw);
         }
         else
         {
             seeds = seedsRaw;
+            seedCount = seedsRaw.Length;
         }
 
         List<AlmanacMap> maps = [];
@@ -62,6 +66,7 @@ internal class Almanac
         return new Almanac
         {
             SeedsEnumerable = seeds,
+            SeedCount = seedCount,
             Maps = maps.ToImmutableDictionary(m => m.Src, m => m)
         };
     }

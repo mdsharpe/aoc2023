@@ -1,30 +1,46 @@
-﻿using System.Collections.Concurrent;
-
-var input = await File.ReadAllLinesAsync(args.Length > 0 ? args[0] : "../../../input.txt");
+﻿var input = await File.ReadAllLinesAsync(args[0]);
 
 static long FindMinLocation(Almanac almanac)
 {
-    ConcurrentDictionary<long, byte> locations = [];
+    long minLocation = long.MaxValue;
+    object minLocationLock = new();
+    long locationsVisted = 0L;
+    Timer timerConsole = new((_) => Console.WriteLine($"Processed {locationsVisted} of {almanac.SeedCount} ({(float)locationsVisted / almanac.SeedCount * 100}%)... (min location = {minLocation})"), null, 0, 1000);
 
     Parallel.ForEach(
         almanac.SeedsEnumerable,
-        new ParallelOptions { MaxDegreeOfParallelism = 1 },
+        new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount - 1 },
         seed =>
-        {
-            var location = almanac.Lookup("seed", "location", seed);
-            locations.TryAdd(location, 0);
-        });
+    {
+        var location = almanac.Lookup("seed", "location", seed);
+        Interlocked.Increment(ref locationsVisted);
 
-    return locations.Keys.Min();
+        if (location < minLocation)
+        {
+            lock (minLocationLock)
+            {
+                if (location < minLocation)
+                {
+                    minLocation = location;
+                }
+            }
+        }
+    });
+
+    timerConsole.Dispose();
+
+    return minLocation;
 }
 
 Almanac almanac;
 long minLocation;
 
 almanac = Almanac.Parse(input);
+Console.WriteLine($"Almanac parsed with {almanac.SeedCount} seeds.");
 minLocation = FindMinLocation(almanac);
 Console.WriteLine($"Min location: {minLocation}");
 
 almanac = Almanac.Parse(input, interpretSeedsAsRanges: true);
+Console.WriteLine($"Almanac parsed with {almanac.SeedCount} seeds.");
 minLocation = FindMinLocation(almanac);
 Console.WriteLine($"Min location: {minLocation}");
