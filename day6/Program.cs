@@ -3,46 +3,59 @@
 var input = await File.ReadAllLinesAsync(args[0]);
 
 var times = input[0].Substring(5).Split(' ', StringSplitOptions.RemoveEmptyEntries)
-    .Select(int.Parse).ToArray();
+    .Select(long.Parse).ToArray();
 
 var distances = input[1].Substring(9).Split(' ', StringSplitOptions.RemoveEmptyEntries)
-    .Select(int.Parse).ToArray();
+    .Select(long.Parse).ToArray();
 
 Console.WriteLine($"Times:     {string.Join(',', times)}");
 Console.WriteLine($"Distances: {string.Join(',', distances)}");
 
-var races = times.Select((t, i) => new Race(i, t, distances[i])).ToImmutableArray();
+var races = times.Select((t, i) => new Race(i, t, distances[i])).ToList();
 
-var waysToWinByRace = races.ToDictionary(o => o, o => 0);
+races.Add(new Race(
+    races.Max(o => o.Id) + 1,
+    long.Parse(races.Select(o => o.Duration.ToString()).Aggregate("", string.Concat)),
+    long.Parse(races.Select(o => o.Distance.ToString()).Aggregate("", string.Concat)),
+    true
+));
+
+var waysToWinByRace = races.ToDictionary(o => o, o => 0L);
 
 foreach (var race in races)
 {
-    Console.WriteLine("Race {0}", race.Id);
+    Console.WriteLine("Race {0}...", race.Id);
 
-    var buttonHeldDownMs = -1;
-    do
+    var waysToWin = 0;
+
+    IEnumerable<long> DurationEnumerator(long duration)
     {
-        buttonHeldDownMs++;
-        var speed = buttonHeldDownMs;
-        var travelTime = race.Duration - buttonHeldDownMs;
-        var distanceTravelled = speed * travelTime;
-
-        Console.WriteLine("Button {0}ms => travel {1}mm => {2}",
-            buttonHeldDownMs,
-            distanceTravelled,
-            distanceTravelled > race.Distance ? "win" : "lose");
-
-        if (distanceTravelled > race.Distance)
+        for (var i = 0L; i < duration; i++)
         {
-            waysToWinByRace[race] = waysToWinByRace[race] + 1;
+            yield return i;
         }
-    } while (race.Duration > buttonHeldDownMs);
+    };
+
+    Parallel.ForEach(
+        DurationEnumerator(race.Duration),
+        buttonHeldDownMs =>
+        {
+            var speed = buttonHeldDownMs;
+            var travelTime = race.Duration - buttonHeldDownMs;
+            var distanceTravelled = speed * travelTime;
+
+            if (distanceTravelled > race.Distance)
+            {
+                Interlocked.Increment(ref waysToWin);
+            }
+        });
+
+    waysToWinByRace[race] = waysToWin;
+    Console.WriteLine("Found {0} ways to win race that lasted {1}ms", waysToWinByRace[race], race.Duration);
 }
 
-foreach (var race in races)
-{
-    Console.WriteLine("Found {0} ways to win race that lasted {1}ms!", waysToWinByRace[race], race.Duration);
-}
-
-var result = waysToWinByRace.Values.Aggregate(1, (a, b) => a * b);
-Console.WriteLine(result);
+var waysProduct = waysToWinByRace
+    .Where(o => !o.Key.IsKerningCompensated)
+    .Select(o => o.Value)
+    .Aggregate(1L, (a, b) => a * b);
+Console.WriteLine(waysProduct);

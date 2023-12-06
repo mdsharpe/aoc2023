@@ -1,2 +1,2 @@
-internal record Race(int Id, int Duration, int Distance) {
+internal record Race(int Id, long Duration, long Distance, bool IsKerningCompensated = false) {
 }
