@@ -1,6 +1,4 @@
-﻿using System.Collections.Immutable;
-
-var input = await File.ReadAllLinesAsync(args[0]);
+﻿var input = await File.ReadAllLinesAsync(args[0]);
 
 var times = input[0].Substring(5).Split(' ', StringSplitOptions.RemoveEmptyEntries)
     .Select(long.Parse).ToArray();
