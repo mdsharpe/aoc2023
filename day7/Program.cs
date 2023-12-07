@@ -1,17 +1,17 @@
-﻿var input = await File.ReadAllLinesAsync(args[0]);
+﻿using System.Collections.Immutable;
 
-var hands = input.Select(Hand.Parse).ToArray();
-var handComparer = new HandComparer();
-
-var orderedHands = hands
+var input = await File.ReadAllLinesAsync(args[0]);
+var jIsJoker = args.Length > 1 && args[1].Equals("-j", StringComparison.OrdinalIgnoreCase);
+var handComparer = new HandComparer(jIsJoker);
+var hands = input.Select(Hand.Parse)
     .OrderBy(hand => hand, handComparer)
-    .ToArray();
+    .ToImmutableArray();
 
 var winnings = 0;
 
-for (var rank = 1; rank <= orderedHands.Length; rank++)
+for (var rank = 1; rank <= hands.Length; rank++)
 {
-    var hand = orderedHands[rank - 1];
+    var hand = hands[rank - 1];
     Console.WriteLine($"{rank}: {hand}");
     winnings += hand.BidAmount * rank;
 }

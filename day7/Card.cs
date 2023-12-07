@@ -11,7 +11,7 @@ internal readonly record struct Card(CardKind Kind)
         '8' => new Card(CardKind.Eight),
         '9' => new Card(CardKind.Nine),
         'T' => new Card(CardKind.Ten),
-        'J' => new Card(CardKind.Jack),
+        'J' => new Card(CardKind.JackOrJoker),
         'Q' => new Card(CardKind.Queen),
         'K' => new Card(CardKind.King),
         'A' => new Card(CardKind.Ace),
@@ -30,7 +30,7 @@ internal readonly record struct Card(CardKind Kind)
         CardKind.Eight => "8",
         CardKind.Nine => "9",
         CardKind.Ten => "T",
-        CardKind.Jack => "J",
+        CardKind.JackOrJoker => "J",
         CardKind.Queen => "Q",
         CardKind.King => "K",
         _ => throw new NotImplementedException()

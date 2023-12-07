@@ -1,5 +1,12 @@
 internal class HandComparer : IComparer<Hand>
 {
+    private readonly bool _jIsJoker;
+
+    public HandComparer(bool jIsJoker)
+    {
+        _jIsJoker = jIsJoker;
+    }
+
     public int Compare(Hand? a, Hand? b)
     {
         if (a is null || b is null)
@@ -7,8 +14,8 @@ internal class HandComparer : IComparer<Hand>
             throw new InvalidOperationException();
         }
 
-        var aKind = a.GetKind();
-        var bKind = b.GetKind();
+        var aKind = a.GetKind(_jIsJoker);
+        var bKind = b.GetKind(_jIsJoker);
 
         if (aKind > bKind)
         {

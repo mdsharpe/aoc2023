@@ -21,10 +21,38 @@ internal record Hand
 
     public override string ToString() => $"{string.Join("", Cards)} {BidAmount}";
 
-    public HandKind GetKind()
+    public HandKind GetKind(bool jIsJoker)
     {
-        var cardKinds = Cards.Select(card => card.Kind).ToImmutableHashSet();
-        var cardCounts = Cards.GroupBy(card => card.Kind).Select(group => group.Count()).ToImmutableHashSet();
+        if (!jIsJoker)
+        {
+            return GetKindInternal();
+        }
+
+        var bestKind = HandKind.HighCard;
+
+        var substitutions = Enum.GetValues<CardKind>().Where(kind => kind != CardKind.JackOrJoker);
+
+        foreach (var jokerSubstitution in substitutions)
+        {
+            var kind = GetKindInternal(jokerSubstitution);
+
+            if (kind > bestKind)
+            {
+                bestKind = kind;
+            }
+        }
+
+        return bestKind;
+    }
+
+    public HandKind GetKindInternal(CardKind? jokerSubstitution = null)
+    {
+        var cards = jokerSubstitution is null
+            ? Cards
+            : Cards.Select(card => card.Kind == CardKind.JackOrJoker ? new Card(jokerSubstitution.Value) : card).ToImmutableArray();
+
+        var cardKinds = cards.Select(card => card.Kind).ToImmutableHashSet();
+        var cardCounts = cards.GroupBy(card => card.Kind).Select(group => group.Count()).ToImmutableHashSet();
 
         if (cardKinds.Count == 1)
         {

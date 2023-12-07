@@ -1,4 +1,5 @@
-internal enum CardKind {
+internal enum CardKind
+{
     Two = 2,
     Three = 3,
     Four = 4,
@@ -8,7 +9,7 @@ internal enum CardKind {
     Eight = 8,
     Nine = 9,
     Ten = 10,
-    Jack = 11, 
+    JackOrJoker = 11,
     Queen = 12,
     King = 13,
     Ace = 14,
