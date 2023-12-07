@@ -28,14 +28,20 @@ internal class HandComparer : IComparer<Hand>
 
         for (var i = 0; i < a.Cards.Length; i++)
         {
-            var aCard = a.Cards[i];
-            var bCard = b.Cards[i];
+            var aCard = a.Cards[i].Kind;
+            var bCard = b.Cards[i].Kind;
 
-            if (aCard.Kind > bCard.Kind)
+            if (_jIsJoker)
+            {
+                aCard = aCard == CardKind.JackOrJoker ? CardKind.Weakest : aCard;
+                bCard = bCard == CardKind.JackOrJoker ? CardKind.Weakest : bCard;
+            }
+
+            if (aCard > bCard)
             {
                 return 1;
             }
-            else if (aCard.Kind < bCard.Kind)
+            else if (aCard < bCard)
             {
                 return -1;
             }

@@ -12,8 +12,9 @@ var winnings = 0;
 for (var rank = 1; rank <= hands.Length; rank++)
 {
     var hand = hands[rank - 1];
-    Console.WriteLine($"{rank}: {hand}");
+    Console.WriteLine($"{rank}: {hand}\t{hand.GetKind(jIsJoker)}");
     winnings += hand.BidAmount * rank;
 }
 
+Console.WriteLine();
 Console.WriteLine($"Winnings: {winnings}");
