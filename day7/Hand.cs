@@ -20,4 +20,42 @@ internal record Hand
     }
 
     public override string ToString() => $"{string.Join("", Cards)} {BidAmount}";
+
+    public HandKind GetKind()
+    {
+        var cardKinds = Cards.Select(card => card.Kind).ToImmutableHashSet();
+        var cardCounts = Cards.GroupBy(card => card.Kind).Select(group => group.Count()).ToImmutableHashSet();
+
+        if (cardKinds.Count == 1)
+        {
+            return HandKind.FiveOfAKind;
+        }
+
+        if (cardKinds.Count == 2)
+        {
+            if (cardCounts.Any(o => o == 4))
+            {
+                return HandKind.FourOfAKind;
+            }
+
+            return HandKind.FullHouse;
+        }
+
+        if (cardKinds.Count == 3)
+        {
+            if (cardCounts.Any(o => o == 3))
+            {
+                return HandKind.ThreeOfAKind;
+            }
+
+            return HandKind.TwoPair;
+        }
+
+        if (cardCounts.Any(o => o == 2))
+        {
+            return HandKind.OnePair;
+        }
+
+        return HandKind.HighCard;
+    }
 }

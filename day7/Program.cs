@@ -4,10 +4,16 @@ var hands = input.Select(Hand.Parse).ToArray();
 var handComparer = new HandComparer();
 
 var orderedHands = hands
-    .OrderByDescending(hand => hand, handComparer)
+    .OrderBy(hand => hand, handComparer)
     .ToArray();
 
-foreach (var hand in orderedHands)
+var winnings = 0;
+
+for (var rank = 1; rank <= orderedHands.Length; rank++)
 {
-    Console.WriteLine(hand.ToString());
+    var hand = orderedHands[rank - 1];
+    Console.WriteLine($"{rank}: {hand}");
+    winnings += hand.BidAmount * rank;
 }
+
+Console.WriteLine($"Winnings: {winnings}");
