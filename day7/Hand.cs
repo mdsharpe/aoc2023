@@ -45,7 +45,7 @@ internal record Hand
         return bestKind;
     }
 
-    public HandKind GetKindInternal(CardKind? jokerSubstitution = null)
+    private HandKind GetKindInternal(CardKind? jokerSubstitution = null)
     {
         var cards = jokerSubstitution is null
             ? Cards

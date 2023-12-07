@@ -15,7 +15,7 @@ internal readonly record struct Card(CardKind Kind)
         'Q' => new Card(CardKind.Queen),
         'K' => new Card(CardKind.King),
         'A' => new Card(CardKind.Ace),
-        _ => throw new Exception("Invalid card")
+        _ => throw new ArgumentOutOfRangeException(nameof(c), "Unrecognized card kind")
     };
 
     public override string ToString() => Kind switch
@@ -33,6 +33,6 @@ internal readonly record struct Card(CardKind Kind)
         CardKind.JackOrJoker => "J",
         CardKind.Queen => "Q",
         CardKind.King => "K",
-        _ => throw new NotImplementedException()
+        _ => "?"
     };
 }
