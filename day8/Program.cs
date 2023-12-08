@@ -45,7 +45,7 @@ Timer timerConsole = new((_) =>
 {
     var rate = Math.Ceiling(stepCount / (DateTimeOffset.Now - startTime).TotalSeconds);
     Console.WriteLine($"Step {stepCount}... ({rate} steps/sec)");
-}, null, 0, 1000);
+}, null, 1000, 1000);
 
 while (true)
 {
@@ -53,46 +53,43 @@ while (true)
 
     var complete = true;
 
-    var nextNodes = currentLocations
-        .Select(currentNode =>
-        {
-            var nextNode = turn switch
-            {
-                'L' => currentNode.Left ?? throw new Exception("Uh oh"),
-                'R' => currentNode.Right ?? throw new Exception("Uh oh"),
-                _ => throw new Exception("Invalid turn"),
-            };
+    for (var i = 0; i < currentLocations.Length; i++)
+    {
+        var currentNode = currentLocations[i];
 
-            if (complete)
+        var nextNode = turn switch
+        {
+            'L' => currentNode.Left ?? throw new Exception("Uh oh"),
+            'R' => currentNode.Right ?? throw new Exception("Uh oh"),
+            _ => throw new Exception("Invalid turn"),
+        };
+
+        if (complete)
+        {
+            if (ghostMode)
             {
-                if (ghostMode)
+                if (!nextNode.Key.EndsWith('Z'))
                 {
-                    if (!nextNode.Key.EndsWith('Z'))
-                    {
-                        complete = false;
-                    }
-                }
-                else
-                {
-                    if (nextNode.Key != "ZZZ")
-                    {
-                        complete = false;
-                    }
+                    complete = false;
                 }
             }
+            else
+            {
+                if (nextNode.Key != "ZZZ")
+                {
+                    complete = false;
+                }
+            }
+        }
 
-            return nextNode;
-        }).ToArray();
-        
+        currentLocations[i] = nextNode;
+    }
+
     stepCount++;
 
     if (complete)
     {
         break;
-    }
-    else
-    {
-        currentLocations = nextNodes;
     }
 
     currentTurnIndex++;
