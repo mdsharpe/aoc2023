@@ -1,4 +1,5 @@
-﻿using System.Text.RegularExpressions;
+﻿using System.Collections.Concurrent;
+using System.Text.RegularExpressions;
 
 var input = await File.ReadAllLinesAsync(args[0]);
 
@@ -15,7 +16,7 @@ var map = input.Skip(2).Select(line =>
 
 var nodeDictionary = map.ToDictionary(
     o => o.Key,
-    o => new Node { Key = o.Key });
+    o => new Node(o.Key));
 
 foreach (var (key, (left, right)) in map)
 {
@@ -23,82 +24,135 @@ foreach (var (key, (left, right)) in map)
     nodeDictionary[key].Right = nodeDictionary[right];
 }
 
-Node[] currentLocations;
+Node[] startNodes;
 
 if (ghostMode)
 {
-    currentLocations = nodeDictionary
-        .Where(o => o.Key.EndsWith('A'))
+    startNodes = nodeDictionary
+        .Where(o => o.Value.IsGhostStart)
         .Select(o => o.Value)
         .ToArray();
 }
 else
 {
-    currentLocations = [nodeDictionary["AAA"]];
+    startNodes = [nodeDictionary["AAA"]];
 }
 
-var currentTurnIndex = 0;
-var stepCount = 0L;
+var results = new ConcurrentDictionary<long, ConcurrentDictionary<int, byte>>();
+void PushResult(long stepCount, int threadIndex)
+{
+    results.TryAdd(stepCount, []);
+    results[stepCount].TryAdd(threadIndex, 0);
+}
+Thread[] threads = new Thread[startNodes.Length];
+CancellationTokenSource cts = new();
 var startTime = DateTimeOffset.Now;
 
-Timer timerConsole = new((_) =>
+for (var i = 0; i < startNodes.Length; i++)
 {
-    var rate = Math.Ceiling(stepCount / (DateTimeOffset.Now - startTime).TotalSeconds);
-    Console.WriteLine($"Step {stepCount}... ({rate} steps/sec)");
-}, null, 1000, 1000);
-
-while (true)
-{
-    var turn = turns[currentTurnIndex];
-
-    var complete = true;
-
-    for (var i = 0; i < currentLocations.Length; i++)
+    threads[i] = new Thread((object? state) =>
     {
-        var currentNode = currentLocations[i];
+        object[] parameters = (object[])state!;
+        var threadIndex = (int)parameters[0];
+        var node = (Node)parameters[1];
 
-        var nextNode = turn switch
-        {
-            'L' => currentNode.Left ?? throw new Exception("Uh oh"),
-            'R' => currentNode.Right ?? throw new Exception("Uh oh"),
-            _ => throw new Exception("Invalid turn"),
-        };
+        var stepCount = 0L;
+        int currentTurnIndex = 0;
+        var complete = false;
 
-        if (complete)
+        do
         {
+            if (cts.IsCancellationRequested)
+            {
+                return;
+            }
+
+            node = turns[currentTurnIndex] switch
+            {
+                'L' => node.Left ?? throw new Exception("Uh oh"),
+                'R' => node.Right ?? throw new Exception("Uh oh"),
+                _ => throw new Exception("Invalid turn"),
+            };
+            stepCount++;
+
             if (ghostMode)
             {
-                if (!nextNode.Key.EndsWith('Z'))
+                if (node.IsGhostEnd)
                 {
-                    complete = false;
+                    PushResult(stepCount, threadIndex);
                 }
             }
             else
             {
-                if (nextNode.Key != "ZZZ")
+                complete = node.Key == "ZZZ";
+                PushResult(stepCount, threadIndex);
+
+                if (complete)
                 {
-                    complete = false;
+                    return;
                 }
             }
-        }
 
-        currentLocations[i] = nextNode;
-    }
-
-    stepCount++;
-
-    if (complete)
-    {
-        break;
-    }
-
-    currentTurnIndex++;
-    if (currentTurnIndex >= turns.Length)
-    {
-        currentTurnIndex = 0;
-    }
+            currentTurnIndex++;
+            if (currentTurnIndex >= turns.Length)
+            {
+                currentTurnIndex = 0;
+            }
+        } while (!complete);
+    });
+    threads[i].Start(new object[] { i, startNodes[i] });
 }
 
-timerConsole.Dispose();
+long? finalResult = null;
+var allTimeBest = 0;
+var allTimeCleaned = 0L;
+var maxStepSeenByThread = new Dictionary<int, long>();
+do
+{
+    Thread.Sleep(5000);
 
-Console.WriteLine("Steps: {0}", stepCount);
+    var resultStepNumbers = results.Keys.OrderBy(o => o).ToArray();
+    var best = 0;
+    foreach (var stepNumber in resultStepNumbers)
+    {
+        var threadsAtStep = results[stepNumber];
+        best = Math.Max(threadsAtStep.Count, best);
+
+        if (threadsAtStep.Count == startNodes.Length)
+        {
+            cts.Cancel();
+            finalResult = stepNumber;
+            break;
+        }
+
+        foreach (var threadIndex in threadsAtStep.Keys)
+        {
+            if (stepNumber > maxStepSeenByThread.GetValueOrDefault(threadIndex))
+            {
+                maxStepSeenByThread[threadIndex] = stepNumber;
+            }
+        }
+    }
+
+    var minStepSeenAcrossAllThreads = maxStepSeenByThread.Values.DefaultIfEmpty().Min();
+
+    var cleanedCount = 0L;
+    foreach (var stepNumber in resultStepNumbers.Where(o => o < minStepSeenAcrossAllThreads).ToArray())
+    {
+        results.TryRemove(stepNumber, out var _);
+        cleanedCount++;
+    }
+
+    var maxStepsTaken = resultStepNumbers.DefaultIfEmpty().Max();
+    var rate = Math.Ceiling(maxStepsTaken / (DateTimeOffset.Now - startTime).TotalSeconds);
+
+    var threadsAlive = threads.Where(o => o.IsAlive).Count();
+
+    allTimeBest = Math.Max(best, allTimeBest);
+    allTimeCleaned += cleanedCount;
+
+    Console.WriteLine($"S: {maxStepsTaken}\t\tR: {rate}\tT: {threadsAlive}\tB: {best} ({allTimeBest})\tC: {cleanedCount} ({allTimeCleaned})");
+
+} while (finalResult is null);
+
+Console.WriteLine("Final result: {0}", finalResult);
