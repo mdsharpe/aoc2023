@@ -1,5 +1,3 @@
-using System.Text.Json;
-
 class Visitor
 {
     public List<HashSet<string>> Groups { get; } = [];
@@ -8,17 +6,28 @@ class Visitor
     {
         foreach (var c in connections)
         {
-            Console.WriteLine(JsonSerializer.Serialize(this));
-            var group = Groups.SingleOrDefault(o => o.Contains(c.A) || o.Contains(c.B));
+            var groups = Groups.Where(o => o.Contains(c.A) || o.Contains(c.B)).ToArray();
 
-            if (group is null)
+            if (groups.Length == 0)
             {
                 Groups.Add([c.A, c.B]);
             }
+            else if (groups.Length == 1)
+            {
+                groups[0].Add(c.A);
+                groups[0].Add(c.B);
+            }
+            else if (groups.Length == 2)
+            {
+                var group = groups[0];
+                group.UnionWith(groups[1]);
+                Groups.Remove(groups[1]);
+                groups[0].Add(c.A);
+                groups[0].Add(c.B);
+            }
             else
             {
-                group.Add(c.A);
-                group.Add(c.B);
+                throw new InvalidOperationException();
             }
         }
     }

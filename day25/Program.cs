@@ -24,6 +24,11 @@ for (int s0 = 0; s0 < connections.Length; s0++)
             Console.WriteLine($"Severing {s0},{s1},{s2} => found {visitor.Groups.Count} groups");
             if (visitor.Groups.Count == 2)
             {
+                foreach (var g in visitor.Groups)
+                {
+                    Console.WriteLine(string.Join(",", g.Count));
+                }
+
                 Environment.Exit(0);
             }
         }
