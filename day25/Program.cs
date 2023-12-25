@@ -1,37 +1,31 @@
-﻿using System.Data;
-using System.Text.RegularExpressions;
+﻿var input = await File.ReadAllLinesAsync(args[0]);
+var connections = Parser.Parse(input);
 
-var input = await File.ReadAllLinesAsync(args[0]);
+/**
+ * Traverse connections
+ */
 
-var regex = new Regex(@"(?<node>\S\S\S):( (?<con>\S\S\S))+");
-
-var components = (from line in input
-                  let match = regex.Match(line)
-                  let n = match.Groups["node"].Value
-                  let c = match.Groups["con"].Captures.Select(c => c.Value).ToArray()
-                  select (Component: new Component(n), Connections: c))
-            .ToDictionary(o => o.Component.Key, o => o);
-
-var distinctKeys = components.Values
-    .SelectMany(o => o.Connections)
-    .Where(o => !components.ContainsKey(o))
-    .Distinct()
-    .ToArray();
-
-foreach (var key in distinctKeys)
+for (int s0 = 0; s0 < connections.Length; s0++)
 {
-    components.Add(key, (new Component(key), Array.Empty<string>()));
-}
-
-foreach (var (component, connections) in components.Values)
-{
-    foreach (var connection in connections)
+    for (int s1 = 0; s1 < connections.Length; s1++)
     {
-        component.Connections.Add(components[connection].Component);
-    }
-}
+        for (int s2 = 0; s2 < connections.Length; s2++)
+        {
+            if (s0 == s1 || s0 == s2 || s1 == s2)
+            {
+                continue;
+            }
 
-foreach (var (component, _) in components.Values.OrderBy(o => o.Component.Key))
-{
-    Console.WriteLine($"{component.Key}: {string.Join(", ", component.Connections.Select(c => c.Key))}");
+            var connectionsExceptSevered = connections
+                .Except([connections[s0], connections[s1], connections[s2]]);
+
+            var visitor = new Visitor();
+            visitor.Visit(connectionsExceptSevered);
+            Console.WriteLine($"Severing {s0},{s1},{s2} => found {visitor.Groups.Count} groups");
+            if (visitor.Groups.Count == 2)
+            {
+                Environment.Exit(0);
+            }
+        }
+    }
 }
