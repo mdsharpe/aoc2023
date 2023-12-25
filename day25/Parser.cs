@@ -33,10 +33,6 @@ static class Parser
                             .Distinct(new ConnectionComparer())
                             .ToArray();
 
-        var testVisitor = new Visitor();
-        testVisitor.Visit(connections);
-        Console.WriteLine($"Test result: found {testVisitor.Groups.Count} groups");
-
         return connections;
     }
 }
